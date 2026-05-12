@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8">
+    <title>AI Food Pro | Cookie Prediction</title>
+    <link href="../static/css/common_style.css" rel="stylesheet" type="text/css">
+    <link href="../static/css/menu_style.css" rel="stylesheet" type="text/css">
+    <link href="../static/css/models_css/models_common_style.css" rel="stylesheet" type="text/css">
+    <style>
+      /* ── 이 페이지 전용: models_common_style.css 과도한 여백 재정의 ── */
+      .model_subtitle_space { padding-top: 50px !important; padding-bottom: 30px !important; }
+      .model_subtitle       { font-size: 5rem !important; line-height: 1.5 !important; }
+      .model                { margin-top: 16px !important; margin-bottom: 16px !important; }
+      form                  { margin-top: 16px !important; }
+      #inputs               { margin-bottom: 10px !important; }
+      .inputSet             { height: auto !important; padding-left: 0 !important; }
+      .inputSet label       { font-size: 2.4rem !important; }
+      #result_btn           { font-size: 1.6rem !important; }
+
+      .inputSet { box-sizing: border-box; }
+      #inputs { overflow: hidden; }
+
+      /* --- Drop Zone --- */
+      .drop-zone {
+        border: 2px dashed #aaa;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        color: #888;
+        font-size: 1em;
+        cursor: pointer;
+        box-sizing: border-box;
+        transition: border-color 0.2s, background-color 0.2s;
+        margin: 10px 0;
+      }
+      .drop-zone.dragover {
+        border-color: #4a90d9;
+        background-color: #f0f7ff;
+        color: #4a90d9;
+      }
+      .drop-zone .file-name {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      /* --- HDR extra input --- */
+      .hdr-extra {
+        display: none;
+        margin-top: 10px;
+        padding: 12px;
+        background: #1a2a3a;
+        border-radius: 8px;
+        border: 1px dashed #4a90d9;
+      }
+      .hdr-extra.visible { display: block; }
+      .hdr-extra label {
+        font-size: 0.85em !important;
+        color: #aaa;
+      }
+
+      /* --- Main Tabs (Hardness / Spreadability) --- */
+      .main-tab-container {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        margin-top: 10px;
+        margin-bottom: 16px;
+      }
+      .main-tab-btn {
+        font-family: "Noto Sans KR", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        padding: 12px 48px;
+        border: 3px solid #4a90d9;
+        background: transparent;
+        color: #4a90d9;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .main-tab-btn:first-child {
+        border-radius: 10px 0 0 10px;
+      }
+      .main-tab-btn:last-child {
+        border-radius: 0 10px 10px 0;
+        border-left: none;
+      }
+      .main-tab-btn.active {
+        background: #4a90d9;
+        color: #fff;
+      }
+      .main-tab-btn:hover:not(.active) {
+        background: rgba(74, 144, 217, 0.1);
+      }
+      .main-tab-panel { display: none; }
+      .main-tab-panel.active { display: block; }
+
+      /* --- Result Sections --- */
+      .result-section { margin-top: 30px; }
+      .result-section h2 {
+        font-size: 1.3em;
+        border-bottom: 2px solid #4a90d9;
+        padding-bottom: 6px;
+        margin-bottom: 15px;
+      }
+
+      /* --- Prediction Card --- */
+      .pred-card {
+        background: #f8f9fb;
+        border: 1px solid #e0e4ea;
+        border-radius: 12px;
+        padding: 25px 40px;
+        text-align: center;
+        max-width: 300px;
+        margin: 20px auto;
+      }
+      .pred-card .label {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 8px;
+      }
+      .pred-card .value {
+        font-size: 2.5em;
+        font-weight: 700;
+        color: #333;
+      }
+      .pred-card .unit {
+        font-size: 0.7em;
+        color: #999;
+        margin-top: 4px;
+      }
+
+      /* --- Table --- */
+      .pred-table {
+        margin: 15px auto;
+        border-collapse: collapse;
+        text-align: center;
+        width: 90%;
+        font-size: 1.05em;
+      }
+      .pred-table th, .pred-table td {
+        padding: 14px 28px;
+        border-bottom: 1px solid #ddd;
+      }
+      .pred-table th {
+        background-color: #f5f5f5;
+        border-bottom: 2px solid #333;
+        font-size: 1.1em;
+      }
+      .pred-table tr:last-child td {
+        background-color: #f0f7ff;
+      }
+
+      /* --- Charts --- */
+      .chart-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+        margin: 20px 0;
+      }
+      .chart-row img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      /* --- Legend --- */
+      .scatter-legend {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        margin: 10px 0 5px 0;
+        font-size: 0.9em;
+        color: #666;
+      }
+      .scatter-legend span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot.red { background: #e05555; }
+
+      /* --- Sample count notice --- */
+      .sample-notice {
+        text-align: center;
+        color: #555;
+        font-size: 0.95em;
+        background: #f0f7ff;
+        border: 1px solid #cce0f5;
+        border-radius: 8px;
+        padding: 10px 20px;
+        margin: 16px auto;
+        max-width: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- menu bar -->
+    <div id="menu_bar">
+      <div id="categories">
+        <div class="category" id="home_btn"><a href="/#home">Home</a></div>
+        <div class="category" id="models_btn"><a href="/#intro">Intro</a></div>
+        <div class="category" id="models_btn"><a href="/#models">Models</a></div>
+        <div class="category" id="about_us_btn"><a href="/#about_us">Publications</a></div>
+      </div>
+    </div>
+    <!-- /menu bar -->
+
+    <!-- main -->
+    <main>
+      <!-- title (이슈3: 제목 수정) -->
+      <div class="subtitle_space model_subtitle_space" style="margin-bottom: 0; padding-bottom: 0;">
+        <div class="line_space">
+          <div class="horizontal_line"></div>
+        </div>
+        <h1 class="subtitle model_subtitle">
+          올레오젤 초분광 이미지를 활용한 지방 대체 쿠키의 품질 예측
+        </h1>
+        <div class="line_space">
+          <div class="horizontal_line"></div>
+        </div>
+      </div>
+      <!-- /title -->
+
+      <!-- ========== 파일 업로드 (이슈0: 상단 공유 폼) ========== -->
+      <div class="model" style="margin-top: 20px; padding-top: 0;">
+        <form action="/cookie_prediction" method="POST" enctype="multipart/form-data" id="predForm">
+          <div id="inputs">
+            <div class="column">
+              <div class="inputSet" style="height: auto;">
+                <label>데이터 파일 업로드</label>
+                <!-- 이슈5: 글자 크기 키움 -->
+                <p style="font-size: 2.4rem; color: #555; margin: 6px 0 4px 0; font-weight: 500;">
+                  초분광 스펙트럼 데이터 (224 bands, 936~1716.5nm)
+                </p>
+                <div class="drop-zone" id="dropZone">
+                  드래그하여 파일을 여기에 놓거나 클릭하여 선택하세요
+                  <div class="file-name" id="fileName"></div>
+                </div>
+                <input type="file" id="datafile" name="datafile" accept=".xlsx,.csv,.hdr" style="display:none;">
+                <div class="hdr-extra" id="hdrExtra">
+                  <label>.hdr 바이너리 데이터 파일 (.dat/.raw/.img):</label>
+                  <input type="file" name="datfile" accept=".dat,.raw,.img" style="margin-top: 5px;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- 이슈4: 에러 메시지 -->
+        {% if result and result.error %}
+        <p style="color: red; text-align: center; font-size: 1.1em; margin-top: 20px;">{{ result.error }}</p>
+        {% endif %}
+      </div>
+
+      <!-- 탭 버튼 (항상 표시) -->
+      <div class="main-tab-container">
+        <button type="button" class="main-tab-btn active" data-main-tab="hardness">Hardness 예측</button>
+        <button type="button" class="main-tab-btn" data-main-tab="spread">Spreadability 예측</button>
+      </div>
+
+      <!-- 결과 예측 버튼 (탭 아래) -->
+      <div id="result_btn_space" style="display: flex; gap: 12px; justify-content: center; margin-bottom: 10px;">
+        <button type="submit" form="predForm" id="result_btn">결과 예측 (Prediction)</button>
+      </div>
+
+      <!-- ========== 결과 영역 (예측 완료 후만 표시) ========== -->
+      {% if result and result.regression %}
+
+      <!-- 이슈6: 여러 샘플 업로드 시 안내 -->
+      {% if result.n_samples > 1 %}
+      <div class="sample-notice">
+        총 <strong>{{ result.n_samples }}개</strong> 샘플이 업로드되어 전체 평균값으로 계산되었습니다.
+      </div>
+      {% endif %}
+
+      <!-- ========== Hardness 탭 ========== -->
+      <div class="main-tab-panel active" id="main-tab-hardness">
+        <div class="model" style="margin-top: 0; padding-top: 0;">
+          <div class="model_title">
+            <h1>경도 예측 (Hardness Prediction)</h1>
+          </div>
+
+          <!-- 예측값 카드 -->
+          <div class="pred-card">
+            <div class="label">경도 (Hardness)</div>
+            <div class="value">{{ result.regression.hardness }}</div>
+            <div class="unit">N (Newton)</div>
+          </div>
+
+          <!-- 막대그래프 -->
+          {% if result.bar_chart_hardness %}
+          <div class="result-section">
+            <h2>Hardness - 모델별 예측값</h2>
+            <div class="chart-row">
+              <img src="data:image/png;base64,{{ result.bar_chart_hardness }}" alt="Hardness Bar Chart">
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Scatter plot -->
+          {% if result.scatter_h_imgs %}
+          <div class="result-section">
+            <h2>Hardness - 모델 성능 (Model Performance)</h2>
+            <div class="scatter-legend">
+              <span><span class="dot red"></span> Training dataset</span>
+              <span><span class="dot" style="background:blue;"></span> Testing dataset</span>
+              <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #00cc44;vertical-align:middle;"></span> Predicted</span>
+            </div>
+            <div class="chart-row" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+              {% for model_name, img_b64 in result.scatter_h_imgs.items() %}
+              {% set params = result.scatter_h_params.get(model_name, {}) %}
+              <div style="position:relative;display:inline-block;">
+                <img class="scatter-img"
+                     src="data:image/png;base64,{{ img_b64 }}"
+                     style="display:block;width:280px;"
+                     data-ax-left="{{ params.get('left', 0.125) }}"
+                     data-ax-bottom="{{ params.get('bottom', 0.125) }}"
+                     data-ax-width="{{ params.get('width', 0.775) }}"
+                     data-ax-height="{{ params.get('height', 0.755) }}"
+                     data-pred="{{ result.pred_scaled_h }}">
+                <canvas style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+              </div>
+              {% endfor %}
+            </div>
+            {% if result.perf_hardness %}
+            <table class="pred-table" style="margin-top: 15px;">
+              <tr>
+                <th>Model</th>
+                {% for model_name in result.perf_hardness %}
+                <th colspan="2">{{ model_name }}</th>
+                {% endfor %}
+              </tr>
+              <tr>
+                <th>Dataset</th>
+                {% for model_name in result.perf_hardness %}
+                <th>Train</th><th>Test</th>
+                {% endfor %}
+              </tr>
+              <tr>
+                <td>R&sup2;</td>
+                {% for model_name, perf in result.perf_hardness.items() %}
+                <td>{{ perf.r2_train }}</td><td>{{ perf.r2_test }}</td>
+                {% endfor %}
+              </tr>
+              <tr>
+                <td>RMSE</td>
+                {% for model_name, perf in result.perf_hardness.items() %}
+                <td>{{ perf.rmse_train }}</td><td>{{ perf.rmse_test }}</td>
+                {% endfor %}
+              </tr>
+            </table>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ========== Spreadability 탭 ========== -->
+      <div class="main-tab-panel" id="main-tab-spread">
+        <div class="model" style="margin-top: 0; padding-top: 0;">
+          <div class="model_title">
+            <h1>퍼짐성 예측 (Spreadability Prediction)</h1>
+          </div>
+
+          <!-- 예측값 카드 -->
+          <div class="pred-card">
+            <div class="label">퍼짐성 (Spreadability)</div>
+            <div class="value">{{ result.regression.spreadability }}</div>
+            <div class="unit">Spread Factor</div>
+          </div>
+
+          <!-- 막대그래프 -->
+          {% if result.bar_chart_spread %}
+          <div class="result-section">
+            <h2>Spreadability - 모델별 예측값</h2>
+            <div class="chart-row">
+              <img src="data:image/png;base64,{{ result.bar_chart_spread }}" alt="Spreadability Bar Chart">
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Scatter plot -->
+          {% if result.scatter_s_imgs %}
+          <div class="result-section">
+            <h2>Spreadability - 모델 성능 (Model Performance)</h2>
+            <div class="scatter-legend">
+              <span><span class="dot red"></span> Training dataset</span>
+              <span><span class="dot" style="background:blue;"></span> Testing dataset</span>
+              <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #00cc44;vertical-align:middle;"></span> Predicted</span>
+            </div>
+            <div class="chart-row" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+              {% for model_name, img_b64 in result.scatter_s_imgs.items() %}
+              {% set params = result.scatter_s_params.get(model_name, {}) %}
+              <div style="position:relative;display:inline-block;">
+                <img class="scatter-img"
+                     src="data:image/png;base64,{{ img_b64 }}"
+                     style="display:block;width:280px;"
+                     data-ax-left="{{ params.get('left', 0.125) }}"
+                     data-ax-bottom="{{ params.get('bottom', 0.125) }}"
+                     data-ax-width="{{ params.get('width', 0.775) }}"
+                     data-ax-height="{{ params.get('height', 0.755) }}"
+                     data-pred="{{ result.pred_scaled_s }}">
+                <canvas style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+              </div>
+              {% endfor %}
+            </div>
+            {% if result.perf_spread %}
+            <table class="pred-table" style="margin-top: 15px;">
+              <tr>
+                <th>Model</th>
+                {% for model_name in result.perf_spread %}
+                <th colspan="2">{{ model_name }}</th>
+                {% endfor %}
+              </tr>
+              <tr>
+                <th>Dataset</th>
+                {% for model_name in result.perf_spread %}
+                <th>Train</th><th>Test</th>
+                {% endfor %}
+              </tr>
+              <tr>
+                <td>R&sup2;</td>
+                {% for model_name, perf in result.perf_spread.items() %}
+                <td>{{ perf.r2_train }}</td><td>{{ perf.r2_test }}</td>
+                {% endfor %}
+              </tr>
+              <tr>
+                <td>RMSE</td>
+                {% for model_name, perf in result.perf_spread.items() %}
+                <td>{{ perf.rmse_train }}</td><td>{{ perf.rmse_test }}</td>
+                {% endfor %}
+              </tr>
+            </table>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% endif %}
+      <!-- /결과 영역 -->
+
+      <!-- scripts -->
+      <script>
+        // ── 드래그 앤 드롭 (공유 폼) ──
+        const dz = document.getElementById('dropZone');
+        const fi = document.getElementById('datafile');
+        const fn = document.getElementById('fileName');
+        const hdrDiv = document.getElementById('hdrExtra');
+
+        dz.addEventListener('click', () => fi.click());
+        dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', e => {
+          e.preventDefault();
+          dz.classList.remove('dragover');
+          if (e.dataTransfer.files.length > 0) {
+            fi.files = e.dataTransfer.files;
+            handleFile(e.dataTransfer.files[0]);
+          }
+        });
+        fi.addEventListener('change', () => {
+          if (fi.files.length > 0) handleFile(fi.files[0]);
+        });
+        function handleFile(file) {
+          fn.textContent = file.name;
+          const ext = file.name.split('.').pop().toLowerCase();
+          if (ext === 'hdr') hdrDiv.classList.add('visible');
+          else hdrDiv.classList.remove('visible');
+        }
+
+        // ── Scatter 초록 동그라미 ──
+        function drawScatterDot(img) {
+          const canvas = img.nextElementSibling;
+          if (!canvas || canvas.tagName !== 'CANVAS') return;
+          canvas.width  = img.offsetWidth;
+          canvas.height = img.offsetHeight;
+          if (canvas.width === 0 || canvas.height === 0) return;
+
+          const axLeft   = parseFloat(img.dataset.axLeft   || 0.125);
+          const axBottom = parseFloat(img.dataset.axBottom  || 0.125);
+          const axWidth  = parseFloat(img.dataset.axWidth   || 0.775);
+          const axHeight = parseFloat(img.dataset.axHeight  || 0.755);
+          const pred     = parseFloat(img.dataset.pred);
+          if (isNaN(pred)) return;
+
+          const xMin = -0.05, xMax = 1.05;
+          const yMin = -0.05, yMax = 1.05;
+          const fx = axLeft + (pred - xMin) / (xMax - xMin) * axWidth;
+          const fy = axBottom + (pred - yMin) / (yMax - yMin) * axHeight;
+          const px = fx * canvas.width;
+          const py = (1 - fy) * canvas.height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath();
+          ctx.arc(px, py, 10, 0, 2 * Math.PI);
+          ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+          ctx.lineWidth = 3.5;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(px, py, 10, 0, 2 * Math.PI);
+          ctx.strokeStyle = '#00cc44';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+
+        // 페이지 로드 시 현재 활성 탭의 scatter 그리기
+        document.querySelectorAll('.main-tab-panel.active .scatter-img').forEach(img => {
+          if (img.complete && img.naturalWidth > 0) drawScatterDot(img);
+          else img.addEventListener('load', () => drawScatterDot(img));
+        });
+
+        // ── 탭 전환 (이슈1: localStorage 저장 / 이슈2: 전환 시 scatter 재그리기) ──
+        function switchTab(tabName) {
+          document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.main-tab-panel').forEach(p => p.classList.remove('active'));
+          const btn = document.querySelector(`.main-tab-btn[data-main-tab="${tabName}"]`);
+          if (btn) btn.classList.add('active');  // 패널 유무 관계없이 버튼은 항상 활성화
+          localStorage.setItem('cookie_active_tab', tabName);
+          const panel = document.getElementById('main-tab-' + tabName);
+          if (!panel) return;  // 결과 없으면 여기서 종료 (버튼은 이미 활성화됨)
+          panel.classList.add('active');
+          // 탭 전환 시 scatter 재그리기
+          panel.querySelectorAll('.scatter-img').forEach(img => {
+            if (img.complete && img.naturalWidth > 0) drawScatterDot(img);
+            else img.addEventListener('load', () => drawScatterDot(img));
+          });
+        }
+
+        document.querySelectorAll('.main-tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            switchTab(btn.getAttribute('data-main-tab'));
+          });
+        });
+
+        // 이슈1: 결과 있을 때 마지막 선택 탭 복원
+        {% if result and result.regression %}
+        const savedTab = localStorage.getItem('cookie_active_tab');
+        if (savedTab) switchTab(savedTab);
+        {% endif %}
+      </script>
+
+      <script src="../static/js/model_script.js"></script>
+    </main>
+    <!-- /main -->
+
+  </body>
+</html>
